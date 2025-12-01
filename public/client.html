@@ -1027,6 +1027,14 @@
                     currentBid = data.current_bid;
                     break;
 
+                case 'game:rebid':
+                    log(data.message, 'warning');
+                    break;
+
+                case 'game:random_landlord':
+                    log(`⚠️ ${data.message}：${data.landlord_name}`, 'warning');
+                    break;
+
                 case 'game:bid_timeout':
                     log(data.message, 'warning');
                     break;

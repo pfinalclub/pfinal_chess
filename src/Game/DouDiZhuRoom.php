@@ -193,6 +193,13 @@ class DouDiZhuRoom extends Room
         if ($this->landlordId === null) {
             $this->broadcast('game:rebid', ['message' => '无人叫地主，重新发牌']);
             sleep(2);
+            
+            // 重置玩家叫地主状态
+            foreach ($this->players as $player) {
+                $player->set('has_bid', false);
+                $player->set('bid_score', 0);
+            }
+            
             $this->dealCards();
             $this->startBidding();
         }
@@ -201,6 +208,13 @@ class DouDiZhuRoom extends Room
         if ($this->landlordId === null) {
             $this->landlordId = $this->playerOrder[array_rand($this->playerOrder)];
             $this->currentBid = 1;
+            
+            $randomLandlord = $this->getPlayer($this->landlordId);
+            $this->broadcast('game:random_landlord', [
+                'message' => '两轮无人叫地主，随机指定地主',
+                'landlord_id' => $this->landlordId,
+                'landlord_name' => $randomLandlord?->getName(),
+            ]);
         }
         
         // 设置地主

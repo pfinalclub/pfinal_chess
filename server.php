@@ -9,6 +9,7 @@
 require_once __DIR__ . '/vendor/autoload.php';
 
 use PfinalClub\AsyncioGamekit\GameServer;
+use PfinalClub\AsyncioGamekit\Security\InputValidator;
 use PfinalChess\Game\DouDiZhuRoom;
 
 // 注册自动加载
@@ -28,6 +29,14 @@ spl_autoload_register(function ($class) {
         require $file;
     }
 });
+
+// ==================== 注册自定义游戏事件 ====================
+
+// 添加斗地主游戏的自定义事件到白名单
+InputValidator::addAllowedEvent('bid');       // 叫地主
+InputValidator::addAllowedEvent('play');      // 出牌
+InputValidator::addAllowedEvent('pass');      // 不出
+InputValidator::addAllowedEvent('get_state'); // 获取游戏状态
 
 // ==================== 启动服务器 ====================
 

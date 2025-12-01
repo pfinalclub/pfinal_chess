@@ -2,7 +2,7 @@
 
 基于 `pfinalclub/asyncio-gamekit` 框架开发的实时多人斗地主游戏。
 
-![](https://raw.githubusercontent.com/pfinal-nc/iGallery/master/blog/202511181423338.png)
+![](https://raw.githubusercontent.com/pfinal-nc/iGallery/master/blog/202512011759341.png)
 
 ## ✨ 特性
 
