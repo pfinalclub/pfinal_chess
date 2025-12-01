@@ -1,0 +1,1460 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>斗地主 - PFinal Chess</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0f1a;
+            --bg-secondary: #121a2d;
+            --bg-card: #1a2540;
+            --accent-gold: #d4af37;
+            --accent-red: #e74c3c;
+            --accent-green: #2ecc71;
+            --text-primary: #f5f5f5;
+            --text-secondary: #a0a8b8;
+            --card-red: #dc2626;
+            --card-black: #1f2937;
+            --shadow-glow: 0 0 30px rgba(212, 175, 55, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: var(--bg-primary);
+            background-image: 
+                radial-gradient(ellipse at 50% 0%, rgba(212, 175, 55, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(46, 204, 113, 0.05) 0%, transparent 40%),
+                linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        /* 顶部状态栏 */
+        .header {
+            background: linear-gradient(180deg, rgba(26, 37, 64, 0.95) 0%, rgba(26, 37, 64, 0.7) 100%);
+            backdrop-filter: blur(10px);
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            font-size: 32px;
+            filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.5));
+        }
+
+        .logo-text {
+            font-family: 'Playfair Display', serif;
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-gold) 0%, #f5e6a3 50%, var(--accent-gold) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(212, 175, 55, 0.5);
+        }
+
+        .connection-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .connection-badge.disconnected {
+            background: rgba(231, 76, 60, 0.2);
+            border: 1px solid rgba(231, 76, 60, 0.4);
+            color: var(--accent-red);
+        }
+
+        .connection-badge.connected {
+            background: rgba(46, 204, 113, 0.2);
+            border: 1px solid rgba(46, 204, 113, 0.4);
+            color: var(--accent-green);
+        }
+
+        .connection-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .disconnected .connection-dot { background: var(--accent-red); }
+        .connected .connection-dot { background: var(--accent-green); }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+
+        /* 主容器 */
+        .main-container {
+            margin-top: 70px;
+            display: flex;
+            height: calc(100vh - 70px);
+        }
+
+        /* 左侧面板 */
+        .sidebar {
+            width: 320px;
+            background: rgba(26, 37, 64, 0.6);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(212, 175, 55, 0.1);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+        }
+
+        .panel {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(212, 175, 55, 0.1);
+        }
+
+        .panel-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--accent-gold);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-group {
+            margin-bottom: 12px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-gold) 0%, #b8962e 100%);
+            color: var(--bg-primary);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-danger {
+            background: rgba(231, 76, 60, 0.2);
+            color: var(--accent-red);
+            border: 1px solid rgba(231, 76, 60, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: rgba(231, 76, 60, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* 游戏区域 */
+        .game-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            padding: 20px;
+        }
+
+        /* 游戏桌面 */
+        .game-table {
+            flex: 1;
+            background: radial-gradient(ellipse at center, #1a4a32 0%, #0d2818 100%);
+            border-radius: 30px;
+            border: 4px solid #2d5a3f;
+            box-shadow: 
+                inset 0 0 100px rgba(0, 0, 0, 0.5),
+                0 20px 60px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-table::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            pointer-events: none;
+        }
+
+        /* 玩家位置 */
+        .player-area {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .player-top {
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .player-left {
+            left: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .player-right {
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .player-bottom {
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .player-info {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            padding: 12px 20px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .player-info.landlord {
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+        }
+
+        .player-info.current-turn {
+            animation: glow 1.5s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 10px rgba(46, 204, 113, 0.3); }
+            50% { box-shadow: 0 0 30px rgba(46, 204, 113, 0.6); }
+        }
+
+        .player-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .player-details {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .player-name {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .player-role {
+            font-size: 12px;
+            color: var(--accent-gold);
+        }
+
+        .player-card-count {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        /* 牌区域 */
+        .cards-played-area {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .last-player-name {
+            font-size: 12px;
+            color: var(--text-secondary);
+            background: rgba(0, 0, 0, 0.5);
+            padding: 4px 12px;
+            border-radius: 10px;
+        }
+
+        .cards-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 2px;
+        }
+
+        /* 扑克牌样式 */
+        .card {
+            width: 70px;
+            height: 100px;
+            background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+            border-radius: 8px;
+            box-shadow: 
+                0 4px 8px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            user-select: none;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+        }
+
+        .card.selected {
+            transform: translateY(-20px);
+            box-shadow: 0 12px 24px rgba(212, 175, 55, 0.4);
+            border: 2px solid var(--accent-gold);
+        }
+
+        .card.small {
+            width: 50px;
+            height: 72px;
+            font-size: 12px;
+        }
+
+        .card .card-value {
+            font-size: 24px;
+            line-height: 1;
+        }
+
+        .card .card-suit {
+            font-size: 28px;
+            line-height: 1;
+        }
+
+        .card.red { color: var(--card-red); }
+        .card.black { color: var(--card-black); }
+
+        .card.joker {
+            background: linear-gradient(135deg, #ffd700 0%, #ff6b6b 50%, #ffd700 100%);
+        }
+
+        .card.joker.big { background: linear-gradient(135deg, #ff4757 0%, #ff6b81 100%); }
+        .card.joker.small { background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); color: white; }
+
+        /* 我的手牌 */
+        .my-cards {
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin-top: 10px;
+        }
+
+        .my-cards .card {
+            margin-left: -30px;
+        }
+
+        .my-cards .card:first-child {
+            margin-left: 0;
+        }
+
+        /* 操作按钮区域 */
+        .action-buttons {
+            position: absolute;
+            bottom: 180px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+            z-index: 10;
+        }
+
+        .action-btn {
+            padding: 12px 32px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn.play {
+            background: linear-gradient(135deg, var(--accent-gold) 0%, #b8962e 100%);
+            color: var(--bg-primary);
+        }
+
+        .action-btn.pass {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .action-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 叫地主面板 */
+        .bid-panel {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(20px);
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid var(--accent-gold);
+            text-align: center;
+            z-index: 20;
+            display: none;
+        }
+
+        .bid-panel.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+
+        .bid-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--accent-gold);
+        }
+
+        .bid-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .bid-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .bid-btn.score-1 { background: linear-gradient(135deg, #3498db, #2980b9); color: white; }
+        .bid-btn.score-2 { background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; }
+        .bid-btn.score-3 { background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; }
+        .bid-btn.no-bid { background: rgba(255, 255, 255, 0.1); color: var(--text-primary); border: 1px solid rgba(255, 255, 255, 0.2); }
+
+        .bid-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .bid-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 底牌展示 */
+        .landlord-cards {
+            position: absolute;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 15px;
+            border: 1px solid var(--accent-gold);
+        }
+
+        .landlord-cards-label {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--accent-gold);
+            color: var(--bg-primary);
+            padding: 2px 12px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* 消息日志 */
+        .message-log {
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+
+        .log-entry {
+            padding: 8px 12px;
+            margin-bottom: 4px;
+            border-radius: 6px;
+            animation: slideIn 0.2s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .log-entry.info { background: rgba(52, 152, 219, 0.2); color: #5dade2; }
+        .log-entry.success { background: rgba(46, 204, 113, 0.2); color: #58d68d; }
+        .log-entry.warning { background: rgba(241, 196, 15, 0.2); color: #f4d03f; }
+        .log-entry.error { background: rgba(231, 76, 60, 0.2); color: #ec7063; }
+        .log-entry.game { background: rgba(212, 175, 55, 0.2); color: var(--accent-gold); }
+
+        /* 游戏结果面板 */
+        .result-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .result-panel.show {
+            display: flex;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .result-content {
+            background: var(--bg-card);
+            padding: 40px;
+            border-radius: 20px;
+            border: 2px solid var(--accent-gold);
+            text-align: center;
+            max-width: 500px;
+        }
+
+        .result-title {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .result-title.win { color: var(--accent-gold); }
+        .result-title.lose { color: var(--accent-red); }
+
+        .result-scores {
+            margin: 20px 0;
+        }
+
+        .result-score-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+
+        .score-positive { color: var(--accent-green); }
+        .score-negative { color: var(--accent-red); }
+
+        /* 等待匹配 */
+        .waiting-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+        }
+
+        .waiting-overlay.hidden {
+            display: none;
+        }
+
+        .waiting-text {
+            font-size: 24px;
+            color: var(--accent-gold);
+            margin-bottom: 20px;
+        }
+
+        .waiting-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(212, 175, 55, 0.2);
+            border-top-color: var(--accent-gold);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .player-count-display {
+            margin-top: 20px;
+            font-size: 18px;
+            color: var(--text-secondary);
+        }
+
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-gold);
+            border-radius: 3px;
+        }
+
+        /* 响应式 */
+        @media (max-width: 1200px) {
+            .sidebar {
+                width: 280px;
+            }
+            
+            .card {
+                width: 60px;
+                height: 85px;
+            }
+            
+            .my-cards .card {
+                margin-left: -25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部状态栏 -->
+    <header class="header">
+        <div class="logo">
+            <span class="logo-icon">🃏</span>
+            <span class="logo-text">斗地主</span>
+        </div>
+        <div id="connectionBadge" class="connection-badge disconnected">
+            <span class="connection-dot"></span>
+            <span id="connectionText">未连接</span>
+        </div>
+    </header>
+
+    <!-- 主容器 -->
+    <div class="main-container">
+        <!-- 左侧面板 -->
+        <aside class="sidebar">
+            <!-- 连接面板 -->
+            <div class="panel">
+                <h3 class="panel-title">🔌 连接设置</h3>
+                <div class="input-group">
+                    <label>服务器地址</label>
+                    <input type="text" id="serverUrl" value="ws://localhost:2345">
+                </div>
+                <button class="btn btn-primary" id="connectBtn" onclick="connect()">连接服务器</button>
+                <button class="btn btn-danger" id="disconnectBtn" onclick="disconnect()" disabled>断开连接</button>
+            </div>
+
+            <!-- 玩家面板 -->
+            <div class="panel">
+                <h3 class="panel-title">👤 玩家设置</h3>
+                <div class="input-group">
+                    <label>玩家名称</label>
+                    <input type="text" id="playerName" placeholder="请输入昵称">
+                </div>
+                <button class="btn btn-primary" onclick="setName()">设置名称</button>
+            </div>
+
+            <!-- 匹配面板 -->
+            <div class="panel">
+                <h3 class="panel-title">🎮 游戏大厅</h3>
+                <button class="btn btn-primary" onclick="quickMatch()">🔥 快速匹配</button>
+                <button class="btn btn-secondary" onclick="getRooms()">📋 房间列表</button>
+                <button class="btn btn-danger" onclick="leaveRoom()">🚪 离开房间</button>
+            </div>
+
+            <!-- 消息日志 -->
+            <div class="panel" style="flex: 1;">
+                <h3 class="panel-title">📜 消息记录</h3>
+                <div class="message-log" id="messageLog"></div>
+            </div>
+        </aside>
+
+        <!-- 游戏区域 -->
+        <main class="game-area">
+            <div class="game-table">
+                <!-- 等待匹配覆盖层 -->
+                <div class="waiting-overlay" id="waitingOverlay">
+                    <div class="waiting-text" id="waitingText">等待连接服务器...</div>
+                    <div class="waiting-spinner"></div>
+                    <div class="player-count-display" id="playerCountDisplay"></div>
+                </div>
+
+                <!-- 底牌区域 -->
+                <div class="landlord-cards" id="landlordCards" style="display: none;">
+                    <div class="landlord-cards-label">底牌</div>
+                </div>
+
+                <!-- 上家 -->
+                <div class="player-area player-left" id="playerLeft" style="display: none;">
+                    <div class="player-info" id="playerLeftInfo">
+                        <div class="player-avatar">👤</div>
+                        <div class="player-details">
+                            <div class="player-name" id="playerLeftName">等待中...</div>
+                            <div class="player-role" id="playerLeftRole"></div>
+                        </div>
+                        <div class="player-card-count" id="playerLeftCount">17张</div>
+                    </div>
+                </div>
+
+                <!-- 下家 -->
+                <div class="player-area player-right" id="playerRight" style="display: none;">
+                    <div class="player-info" id="playerRightInfo">
+                        <div class="player-avatar">👤</div>
+                        <div class="player-details">
+                            <div class="player-name" id="playerRightName">等待中...</div>
+                            <div class="player-role" id="playerRightRole"></div>
+                        </div>
+                        <div class="player-card-count" id="playerRightCount">17张</div>
+                    </div>
+                </div>
+
+                <!-- 出牌区域 -->
+                <div class="cards-played-area" id="playedArea">
+                    <div class="last-player-name" id="lastPlayerName" style="display: none;"></div>
+                    <div class="cards-container" id="playedCards"></div>
+                </div>
+
+                <!-- 叫地主面板 -->
+                <div class="bid-panel" id="bidPanel">
+                    <div class="bid-title">请叫分</div>
+                    <div class="bid-info" id="bidInfo">当前最高: 0分</div>
+                    <div class="bid-buttons">
+                        <button class="bid-btn no-bid" onclick="bid(0)">不叫</button>
+                        <button class="bid-btn score-1" id="bidBtn1" onclick="bid(1)">1分</button>
+                        <button class="bid-btn score-2" id="bidBtn2" onclick="bid(2)">2分</button>
+                        <button class="bid-btn score-3" id="bidBtn3" onclick="bid(3)">3分</button>
+                    </div>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="action-buttons" id="actionButtons" style="display: none;">
+                    <button class="action-btn pass" id="passBtn" onclick="pass()">不出</button>
+                    <button class="action-btn play" id="playBtn" onclick="playCards()">出牌</button>
+                </div>
+
+                <!-- 我的手牌 -->
+                <div class="player-area player-bottom" id="playerBottom">
+                    <div class="player-info" id="playerBottomInfo">
+                        <div class="player-avatar">🎮</div>
+                        <div class="player-details">
+                            <div class="player-name" id="myName">我</div>
+                            <div class="player-role" id="myRole"></div>
+                        </div>
+                    </div>
+                    <div class="my-cards" id="myCards"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 游戏结果面板 -->
+    <div class="result-panel" id="resultPanel">
+        <div class="result-content">
+            <div class="result-title" id="resultTitle">游戏结束</div>
+            <div class="result-info" id="resultInfo"></div>
+            <div class="result-scores" id="resultScores"></div>
+            <button class="btn btn-primary" onclick="closeResult()">确定</button>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let playerId = null;
+        let myCards = [];
+        let selectedCards = [];
+        let currentRoom = null;
+        let gamePhase = 'waiting';
+        let isMyTurn = false;
+        let mustPlay = false;
+        let landlordId = null;
+        let currentBid = 0;
+        let otherPlayers = [];
+
+        // 随机生成玩家名称
+        document.getElementById('playerName').value = '玩家_' + Math.floor(Math.random() * 10000);
+
+        // 连接服务器
+        function connect() {
+            const url = document.getElementById('serverUrl').value;
+            log('正在连接服务器...', 'info');
+
+            try {
+                ws = new WebSocket(url);
+
+                ws.onopen = () => {
+                    updateConnectionStatus(true);
+                    log('已连接到服务器', 'success');
+                    document.getElementById('waitingText').textContent = '请设置名称并开始匹配';
+                };
+
+                ws.onmessage = (event) => {
+                    try {
+                        const message = JSON.parse(event.data);
+                        handleMessage(message);
+                    } catch (e) {
+                        console.error('解析消息失败:', e);
+                    }
+                };
+
+                ws.onerror = (error) => {
+                    log('连接错误', 'error');
+                    console.error('WebSocket error:', error);
+                };
+
+                ws.onclose = () => {
+                    updateConnectionStatus(false);
+                    log('连接已断开', 'error');
+                    ws = null;
+                    resetGame();
+                };
+            } catch (e) {
+                log('连接失败: ' + e.message, 'error');
+            }
+        }
+
+        // 断开连接
+        function disconnect() {
+            if (ws) {
+                ws.close();
+            }
+        }
+
+        // 发送消息
+        function send(event, data = {}) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ event, data }));
+            } else {
+                log('未连接到服务器', 'error');
+            }
+        }
+
+        // 处理消息
+        function handleMessage(message) {
+            const { event, data } = message;
+            console.log('收到消息:', event, data);
+
+            switch (event) {
+                case 'connected':
+                    playerId = data.player_id;
+                    log('玩家ID: ' + playerId, 'info');
+                    break;
+
+                case 'name_set':
+                    log('名称已设置: ' + data.name, 'success');
+                    document.getElementById('myName').textContent = data.name;
+                    break;
+
+                case 'matched':
+                case 'room_joined':
+                    currentRoom = data;
+                    log('已加入房间: ' + data.id, 'success');
+                    document.getElementById('waitingText').textContent = '等待其他玩家加入...';
+                    document.getElementById('playerCountDisplay').textContent = `当前玩家: ${data.player_count}/3`;
+                    break;
+
+                case 'player:join':
+                    log(`玩家 ${data.player.name} 加入房间`, 'info');
+                    document.getElementById('playerCountDisplay').textContent = `当前玩家: ${data.player_count}/3`;
+                    break;
+
+                case 'player:leave':
+                    log('有玩家离开房间', 'warning');
+                    document.getElementById('playerCountDisplay').textContent = `当前玩家: ${data.player_count}/3`;
+                    break;
+
+                case 'game:starting':
+                    log(data.message, 'game');
+                    document.getElementById('waitingText').textContent = `游戏即将开始... ${data.countdown}`;
+                    break;
+
+                case 'game:cards_dealt':
+                    document.getElementById('waitingOverlay').classList.add('hidden');
+                    myCards = data.cards;
+                    renderMyCards();
+                    log('发牌完成，你获得了 ' + myCards.length + ' 张牌', 'game');
+                    setupOtherPlayers(data.position);
+                    break;
+
+                case 'game:deal_complete':
+                    log(data.message, 'info');
+                    break;
+
+                case 'game:bidding_start':
+                    gamePhase = 'bidding';
+                    log('叫地主阶段开始', 'game');
+                    break;
+
+                case 'game:bid_turn':
+                    currentBid = data.current_bid;
+                    updateBidButtons(currentBid);
+                    if (data.player_id === playerId) {
+                        log('轮到你叫地主', 'game');
+                        showBidPanel(true);
+                    } else {
+                        log(`等待 ${data.player_name} 叫地主...`, 'info');
+                        showBidPanel(false);
+                    }
+                    highlightCurrentPlayer(data.player_id);
+                    break;
+
+                case 'game:bid_result':
+                    log(`${data.player_name} ${data.action}`, 'game');
+                    currentBid = data.current_bid;
+                    break;
+
+                case 'game:bid_timeout':
+                    log(data.message, 'warning');
+                    break;
+
+                case 'game:landlord_set':
+                    landlordId = data.landlord_id;
+                    log(`${data.landlord_name} 成为地主，叫分: ${data.bid_score}，倍率: ${data.multiplier}x`, 'game');
+                    showLandlordCards(data.landlord_cards);
+                    updatePlayerRoles();
+                    showBidPanel(false);
+                    break;
+
+                case 'game:cards_update':
+                    myCards = data.cards;
+                    renderMyCards();
+                    break;
+
+                case 'game:playing_start':
+                    gamePhase = 'playing';
+                    log('出牌阶段开始', 'game');
+                    break;
+
+                case 'game:play_turn':
+                    isMyTurn = data.player_id === playerId;
+                    mustPlay = data.must_play;
+                    
+                    if (isMyTurn) {
+                        log(mustPlay ? '轮到你出牌（必须出）' : '轮到你出牌', 'game');
+                        showActionButtons(true, !mustPlay);
+                    } else {
+                        log(`等待 ${data.player_name} 出牌...`, 'info');
+                        showActionButtons(false);
+                    }
+                    
+                    highlightCurrentPlayer(data.player_id);
+                    
+                    if (data.last_cards && data.last_cards.length > 0) {
+                        showPlayedCards(data.last_cards, data.last_player_id);
+                    }
+                    break;
+
+                case 'game:cards_played':
+                    log(`${data.player_name} 出牌: ${formatCards(data.cards)} (${getCardTypeName(data.card_type)})`, 'game');
+                    showPlayedCards(data.cards, data.player_id);
+                    updateOtherPlayerCardCount(data.player_id, data.remaining_count);
+                    selectedCards = [];
+                    break;
+
+                case 'game:player_pass':
+                    log(`${data.player_name} 不出`, 'info');
+                    if (data.player_id === playerId) {
+                        selectedCards = [];
+                        renderMyCards();
+                    }
+                    break;
+
+                case 'game:play_error':
+                    log(data.message, 'error');
+                    break;
+
+                case 'game:end':
+                    gamePhase = 'finished';
+                    showGameResult(data);
+                    break;
+
+                case 'game:error_end':
+                    log('游戏异常结束: ' + data.reason, 'error');
+                    resetGame();
+                    break;
+
+                case 'rooms_list':
+                    log(`当前有 ${data.rooms.length} 个房间`, 'info');
+                    break;
+
+                case 'error':
+                    log('错误: ' + data.message, 'error');
+                    break;
+
+                default:
+                    console.log('未处理的事件:', event, data);
+            }
+        }
+
+        // 设置名称
+        function setName() {
+            const name = document.getElementById('playerName').value.trim();
+            if (!name) {
+                log('请输入玩家名称', 'warning');
+                return;
+            }
+            send('set_name', { name });
+        }
+
+        // 快速匹配
+        function quickMatch() {
+            send('quick_match', { 
+                room_class: 'PfinalChess\\Game\\DouDiZhuRoom',
+                config: {}
+            });
+            log('正在匹配...', 'info');
+            document.getElementById('waitingText').textContent = '正在匹配...';
+            document.getElementById('waitingOverlay').classList.remove('hidden');
+        }
+
+        // 获取房间列表
+        function getRooms() {
+            send('get_rooms');
+        }
+
+        // 离开房间
+        function leaveRoom() {
+            send('leave_room');
+            resetGame();
+        }
+
+        // 叫地主
+        function bid(score) {
+            send('bid', { score });
+            showBidPanel(false);
+        }
+
+        // 出牌
+        function playCards() {
+            if (selectedCards.length === 0) {
+                log('请选择要出的牌', 'warning');
+                return;
+            }
+            
+            const cardIds = selectedCards.map(card => card.suit + '_' + card.value);
+            send('play', { cards: cardIds });
+        }
+
+        // 不出
+        function pass() {
+            send('pass');
+            showActionButtons(false);
+        }
+
+        // 渲染我的手牌
+        function renderMyCards() {
+            const container = document.getElementById('myCards');
+            container.innerHTML = '';
+            
+            myCards.forEach((card, index) => {
+                const cardEl = createCardElement(card);
+                cardEl.addEventListener('click', () => toggleCardSelection(index, cardEl, card));
+                container.appendChild(cardEl);
+            });
+        }
+
+        // 创建牌元素
+        function createCardElement(card, small = false) {
+            const div = document.createElement('div');
+            div.className = 'card';
+            if (small) div.classList.add('small');
+            
+            // 大小王特殊处理
+            if (card.suit === 'joker') {
+                div.classList.add('joker');
+                div.classList.add(card.value === 'B' ? 'big' : 'small');
+                div.innerHTML = `<div class="card-value">${card.value === 'B' ? '大王' : '小王'}</div>`;
+            } else {
+                // 红色花色
+                if (card.suit === 'heart' || card.suit === 'diamond') {
+                    div.classList.add('red');
+                } else {
+                    div.classList.add('black');
+                }
+                
+                div.innerHTML = `
+                    <div class="card-value">${card.value}</div>
+                    <div class="card-suit">${card.symbol}</div>
+                `;
+            }
+            
+            return div;
+        }
+
+        // 切换牌选择状态
+        function toggleCardSelection(index, element, card) {
+            if (!isMyTurn || gamePhase !== 'playing') return;
+            
+            const cardIndex = selectedCards.findIndex(c => 
+                c.suit === card.suit && c.value === card.value
+            );
+            
+            if (cardIndex === -1) {
+                selectedCards.push(card);
+                element.classList.add('selected');
+            } else {
+                selectedCards.splice(cardIndex, 1);
+                element.classList.remove('selected');
+            }
+        }
+
+        // 显示出的牌
+        function showPlayedCards(cards, playerId) {
+            const container = document.getElementById('playedCards');
+            const nameEl = document.getElementById('lastPlayerName');
+            
+            container.innerHTML = '';
+            
+            if (cards && cards.length > 0) {
+                cards.forEach(card => {
+                    const cardEl = createCardElement(card, true);
+                    container.appendChild(cardEl);
+                });
+                
+                // 显示出牌玩家名称
+                const playerName = getPlayerName(playerId);
+                if (playerName) {
+                    nameEl.textContent = playerName;
+                    nameEl.style.display = 'block';
+                }
+            } else {
+                nameEl.style.display = 'none';
+            }
+        }
+
+        // 显示叫地主面板
+        function showBidPanel(show) {
+            const panel = document.getElementById('bidPanel');
+            if (show) {
+                panel.classList.add('show');
+            } else {
+                panel.classList.remove('show');
+            }
+        }
+
+        // 更新叫分按钮状态
+        function updateBidButtons(currentBid) {
+            document.getElementById('bidBtn1').disabled = currentBid >= 1;
+            document.getElementById('bidBtn2').disabled = currentBid >= 2;
+            document.getElementById('bidBtn3').disabled = currentBid >= 3;
+            document.getElementById('bidInfo').textContent = `当前最高: ${currentBid}分`;
+        }
+
+        // 显示操作按钮
+        function showActionButtons(show, canPass = true) {
+            const buttons = document.getElementById('actionButtons');
+            const passBtn = document.getElementById('passBtn');
+            
+            buttons.style.display = show ? 'flex' : 'none';
+            passBtn.disabled = !canPass;
+        }
+
+        // 显示底牌
+        function showLandlordCards(cards) {
+            const container = document.getElementById('landlordCards');
+            container.innerHTML = '<div class="landlord-cards-label">底牌</div>';
+            
+            cards.forEach(card => {
+                const cardEl = createCardElement(card, true);
+                container.appendChild(cardEl);
+            });
+            
+            container.style.display = 'flex';
+        }
+
+        // 设置其他玩家位置
+        function setupOtherPlayers(myPosition) {
+            document.getElementById('playerLeft').style.display = 'block';
+            document.getElementById('playerRight').style.display = 'block';
+        }
+
+        // 更新玩家角色显示
+        function updatePlayerRoles() {
+            const myRole = document.getElementById('myRole');
+            if (landlordId === playerId) {
+                myRole.textContent = '👑 地主';
+                document.getElementById('playerBottomInfo').classList.add('landlord');
+            } else {
+                myRole.textContent = '👨‍🌾 农民';
+            }
+        }
+
+        // 高亮当前玩家
+        function highlightCurrentPlayer(currentPlayerId) {
+            // 移除所有高亮
+            document.querySelectorAll('.player-info').forEach(el => {
+                el.classList.remove('current-turn');
+            });
+            
+            // 添加高亮
+            if (currentPlayerId === playerId) {
+                document.getElementById('playerBottomInfo').classList.add('current-turn');
+            }
+        }
+
+        // 更新其他玩家牌数
+        function updateOtherPlayerCardCount(playerId, count) {
+            // 简化处理，实际需要根据位置更新
+            if (playerId !== window.playerId) {
+                // 更新其他玩家的牌数显示
+            }
+        }
+
+        // 获取玩家名称
+        function getPlayerName(id) {
+            if (id === playerId) {
+                return document.getElementById('myName').textContent;
+            }
+            return '对手';
+        }
+
+        // 格式化牌显示
+        function formatCards(cards) {
+            return cards.map(c => c.display).join(' ');
+        }
+
+        // 获取牌型名称
+        function getCardTypeName(type) {
+            const names = {
+                'single': '单牌',
+                'pair': '对子',
+                'triple': '三不带',
+                'triple_one': '三带一',
+                'triple_pair': '三带二',
+                'straight': '顺子',
+                'straight_pair': '连对',
+                'plane': '飞机',
+                'plane_single': '飞机带单',
+                'plane_pair': '飞机带对',
+                'four_two': '四带二',
+                'bomb': '炸弹💣',
+                'rocket': '王炸🚀'
+            };
+            return names[type] || type;
+        }
+
+        // 显示游戏结果
+        function showGameResult(data) {
+            const panel = document.getElementById('resultPanel');
+            const title = document.getElementById('resultTitle');
+            const info = document.getElementById('resultInfo');
+            const scores = document.getElementById('resultScores');
+            
+            const myResult = data.results.find(r => r.player_id === playerId);
+            const isWin = myResult && myResult.is_winner;
+            
+            title.textContent = isWin ? '🎉 胜利！' : '😢 失败';
+            title.className = 'result-title ' + (isWin ? 'win' : 'lose');
+            
+            info.innerHTML = `
+                <p>${data.is_landlord_win ? '地主' : '农民'}获胜</p>
+                <p>倍率: ${data.multiplier}x</p>
+            `;
+            
+            scores.innerHTML = data.results.map(r => `
+                <div class="result-score-item">
+                    <span>${r.player_name} ${r.is_landlord ? '(地主)' : '(农民)'}</span>
+                    <span class="${r.score >= 0 ? 'score-positive' : 'score-negative'}">
+                        ${r.score >= 0 ? '+' : ''}${r.score}
+                    </span>
+                </div>
+            `).join('');
+            
+            panel.classList.add('show');
+        }
+
+        // 关闭结果面板
+        function closeResult() {
+            document.getElementById('resultPanel').classList.remove('show');
+            resetGame();
+        }
+
+        // 重置游戏
+        function resetGame() {
+            myCards = [];
+            selectedCards = [];
+            currentRoom = null;
+            gamePhase = 'waiting';
+            isMyTurn = false;
+            mustPlay = false;
+            landlordId = null;
+            currentBid = 0;
+            
+            document.getElementById('myCards').innerHTML = '';
+            document.getElementById('playedCards').innerHTML = '';
+            document.getElementById('landlordCards').style.display = 'none';
+            document.getElementById('playerLeft').style.display = 'none';
+            document.getElementById('playerRight').style.display = 'none';
+            showActionButtons(false);
+            showBidPanel(false);
+            document.getElementById('waitingOverlay').classList.remove('hidden');
+            document.getElementById('waitingText').textContent = '请设置名称并开始匹配';
+            document.getElementById('playerCountDisplay').textContent = '';
+            document.getElementById('myRole').textContent = '';
+            document.getElementById('playerBottomInfo').classList.remove('landlord', 'current-turn');
+        }
+
+        // 更新连接状态
+        function updateConnectionStatus(connected) {
+            const badge = document.getElementById('connectionBadge');
+            const text = document.getElementById('connectionText');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+
+            if (connected) {
+                badge.className = 'connection-badge connected';
+                text.textContent = '已连接';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else {
+                badge.className = 'connection-badge disconnected';
+                text.textContent = '未连接';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            }
+        }
+
+        // 日志记录
+        function log(message, type = 'info') {
+            const container = document.getElementById('messageLog');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            
+            const time = new Date().toLocaleTimeString();
+            entry.innerHTML = `<strong>[${time}]</strong> ${message}`;
+            
+            container.insertBefore(entry, container.firstChild);
+
+            // 限制日志数量
+            while (container.children.length > 100) {
+                container.removeChild(container.lastChild);
+            }
+        }
+    </script>
+</body>
+</html>
+

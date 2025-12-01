@@ -1,0 +1,19 @@
+{
+    "name": "pfinalclub/pfinal-chess",
+    "description": "基于 pfinalclub/asyncio-gamekit 的斗地主棋牌游戏",
+    "type": "project",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "PfinalChess\\": "src/"
+        }
+    },
+    "require": {
+        "php": ">=8.1",
+        "pfinalclub/asyncio-gamekit": "^3.0"
+    },
+    "scripts": {
+        "start": "php server.php start",
+        "start-debug": "php server.php start -d"
+    }
+}
